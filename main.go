@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 )
@@ -29,8 +30,13 @@ func main() {
 
 }
 
+// WeatherHandler
 func WeatherHandler(w http.ResponseWriter, r *http.Request) {
-	lat, lon, apiKey := getInputParams(r)
+	lat, lon, apiKey, err := getInputParams(r)
+	if err != nil {
+		http.Error(w, "invalid input", http.StatusBadRequest)
+		return
+	}
 	URL := fmt.Sprintf("https://api.openweathermap.org/data/2.5/weather?lat=%v&lon=%v&apiKey=%v", lat, lon, apiKey)
 
 	resp, err := http.Get(URL)
@@ -62,14 +68,22 @@ func WeatherHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(responseBytes)
 }
 
-func getInputParams(r *http.Request) (string, string, string) {
-	lat := r.URL.Query().Get("lat")
-	long := r.URL.Query().Get("lon")
+// getInputParams - Return latitude and longitude coordinates
+func getInputParams(r *http.Request) (float64, float64, string, error) {
+	lat, err := strconv.ParseFloat(r.URL.Query().Get("lat"), 64)
+	if err != nil {
+		return 0, 0, "", err
+	}
+	lon, err := strconv.ParseFloat(r.URL.Query().Get("lon"), 64)
+	if err != nil {
+		return 0, 0, "", err
+	}
 	apiKey := r.URL.Query().Get("apikey")
 
-	return lat, long, apiKey
+	return lat, lon, apiKey, nil
 }
 
+// getResponse
 func getResponse(data map[string]interface{}) WheatherResponseEvent {
 	var response WheatherResponseEvent
 	if data["weather"] != nil {
@@ -85,12 +99,13 @@ func getResponse(data map[string]interface{}) WheatherResponseEvent {
 	return response
 }
 
+// getTemperatureCondition - Return temperature condition based on temperature in celsius
 func getTemperatureCondition(temperature float64) string {
-	temperatureCelsius := temperature - 273.15
+	temperatureInCelsius := temperature - 273.15
 	temperatureCondition := "moderate"
-	if temperatureCelsius < 10 {
+	if temperatureInCelsius < 10 {
 		temperatureCondition = "cold"
-	} else if temperatureCelsius > 30 {
+	} else if temperatureInCelsius > 20 {
 		temperatureCondition = "hot"
 	}
 	return temperatureCondition
