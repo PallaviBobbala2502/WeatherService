@@ -9,7 +9,7 @@ WeatherService api-  to get current weather status based on the latitude and lon
  $ go run main.go
 
 # Environment Variables
- Load the APIKEY from env
+ Load the APIKEY from environment variable which is under config/local.env
 
  # /weather API- GET
  # Input Params
